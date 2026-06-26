@@ -44,6 +44,11 @@
   .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(58,51,44,.30) 0%, rgba(58,51,44,.62) 100%);}
   .hero-content{position:relative;z-index:2;color:var(--white);padding:0 24px;max-width:880px;margin:0 auto;text-align:center;}
   .hero h1{font-size:clamp(1.6rem,3.8vw,2.6rem);font-weight:700;line-height:1.6;margin-bottom:22px;white-space:pre-line;text-shadow:0 2px 18px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.4);}
+  .hero h1.hero-title-mobile{display:none;}
+  @media(max-width:760px){
+    .hero h1.hero-title-desktop{display:none;}
+    .hero h1.hero-title-mobile{display:block;}
+  }
   .hero p{font-size:1.02rem;opacity:.95;max-width:520px;margin:0 auto 32px;}
   .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
   .btn{display:inline-block;padding:14px 30px;border-radius:30px;font-size:.92rem;font-weight:500;transition:transform .2s ease, background .2s ease;}
@@ -157,7 +162,7 @@
   <div class="modal-box">
     <button class="modal-close" id="modalClose" aria-label="閉じる">×</button>
     <img class="modal-img" id="modalImg" style="display:none;">
-    <video class="detail-block-video" id="modalVideo" style="display:none;" controls playsinline></video>
+    <video class="detail-block-video" id="modalVideo" style="display:none;" controls playsinline autoplay muted loop preload="auto"></video>
     <div class="modal-gallery" id="modalGallery" style="display:none;"></div>
     <h3 id="modalTitle"></h3>
     <span class="modal-desc" id="modalDesc"></span>
@@ -170,7 +175,8 @@
   <div class="hero-bg" id="heroBg"></div>
   <div class="hero-bg hero-bg-mobile" id="heroBgMobile"></div>
   <div class="hero-content">
-    <h1 id="heroTitle"></h1>
+    <h1 id="heroTitle" class="hero-title-desktop"></h1>
+    <h1 id="heroTitleMobile" class="hero-title-mobile"></h1>
     <p id="heroText"></p>
     <div class="hero-actions">
       <a id="heroLine" class="btn btn-primary" href="#" target="_blank" rel="noopener">ご予約・お問合せ</a>
@@ -307,7 +313,7 @@ function renderSubplans(subplans) {
   return subplans.map(sp => {
     let html = '<div class="detail-block">'
     if (sp.title) html += `<span class="detail-heading">${escHtml(sp.title)}</span>`
-    if (sp.video) html += `<video class="detail-block-video" src="${sp.video}" controls playsinline></video>`
+    if (sp.video) html += `<video class="detail-block-video" src="${sp.video}" controls playsinline autoplay muted loop preload="auto"></video>`
     const images = ((sp.images && sp.images.length) ? sp.images : (sp.image ? [sp.image] : [])).filter(Boolean)
     if (images.length > 1) {
       html += `<div class="detail-block-imgs">${images.map(u => `<img src="${u}" onerror="this.style.display='none'">`).join('')}</div>`
@@ -333,6 +339,7 @@ async function load() {
 
 function render(d) {
   document.getElementById('heroTitle').textContent = d.heroTitle || ''
+  document.getElementById('heroTitleMobile').textContent = d.heroTitleMobile || d.heroTitle || ''
   document.getElementById('heroText').textContent = d.heroText || ''
   if (d.heroImage) document.getElementById('heroBg').style.backgroundImage = `url(${d.heroImage})`
   document.getElementById('heroBgMobile').style.backgroundImage = `url(${d.heroImageMobile || d.heroImage || ''})`
@@ -406,6 +413,8 @@ function render(d) {
         video.style.display = 'none'
       } else if (s.video) {
         video.src = s.video; video.style.display = 'block'
+        video.muted = true
+        video.play().catch(() => {})
       } else {
         video.style.display = 'none'
       }
