@@ -56,6 +56,9 @@
     <label>背景画像</label>
     <input type="file" accept="image/*" onchange="uploadImage(event,'heroImage')">
     <img class="img-preview" id="heroImagePreview">
+    <label>背景画像（スマホ表示用・任意。スマホで見た時だけこちらの写真が使われます。空の場合は上の写真が使われます）</label>
+    <input type="file" accept="image/*" onchange="uploadImage(event,'heroImageMobile')">
+    <img class="img-preview" id="heroImageMobilePreview">
   </div>
 
   <div class="card">
@@ -183,6 +186,7 @@ function fillForm() {
   document.getElementById('heroTitle').value = data.heroTitle || ''
   document.getElementById('heroText').value = data.heroText || ''
   document.getElementById('heroImagePreview').src = data.heroImage || ''
+  document.getElementById('heroImageMobilePreview').src = data.heroImageMobile || ''
   document.getElementById('aboutTitle').value = data.aboutTitle || ''
   document.getElementById('aboutText').value = data.aboutText || ''
   document.getElementById('aboutImagePreview').src = data.aboutImage || ''

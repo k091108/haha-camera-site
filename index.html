@@ -36,6 +36,11 @@
 
   .hero{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden;}
   .hero-bg{position:absolute;inset:0;background:#cbb9a8 center/cover no-repeat;}
+  .hero-bg-mobile{display:none;}
+  @media(max-width:760px){
+    .hero-bg{display:none;}
+    .hero-bg-mobile{display:block;}
+  }
   .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(58,51,44,.30) 0%, rgba(58,51,44,.62) 100%);}
   .hero-content{position:relative;z-index:2;color:var(--white);padding:0 24px;max-width:880px;margin:0 auto;text-align:center;}
   .hero h1{font-size:clamp(1.6rem,3.8vw,2.6rem);font-weight:700;line-height:1.6;margin-bottom:22px;white-space:pre-line;text-shadow:0 2px 18px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.4);}
@@ -87,7 +92,7 @@
   .detail-block:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
   .detail-block-img{width:100%;max-height:320px;object-fit:contain;border-radius:8px;margin-bottom:12px;background:var(--cream-deep);}
   .detail-block-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;}
-  .detail-block-imgs img{width:100%;height:140px;object-fit:cover;border-radius:8px;background:var(--cream-deep);}
+  .detail-block-imgs img{width:100%;height:auto;max-height:300px;object-fit:contain;border-radius:8px;background:var(--cream-deep);}
   .detail-block-video{width:100%;max-height:380px;border-radius:8px;margin-bottom:12px;background:#000;display:block;}
   .detail-heading{display:inline-block;background:var(--cream-deep);color:var(--rose-deep);font-weight:600;font-size:.88rem;padding:5px 14px;border-radius:6px;margin-bottom:10px;}
   .detail-intro{margin-bottom:14px;white-space:pre-line;}
@@ -163,6 +168,7 @@
 
 <section class="hero" id="top">
   <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-bg hero-bg-mobile" id="heroBgMobile"></div>
   <div class="hero-content">
     <h1 id="heroTitle"></h1>
     <p id="heroText"></p>
@@ -304,7 +310,7 @@ function renderSubplans(subplans) {
     if (sp.video) html += `<video class="detail-block-video" src="${sp.video}" controls playsinline></video>`
     const images = ((sp.images && sp.images.length) ? sp.images : (sp.image ? [sp.image] : [])).filter(Boolean)
     if (images.length > 1) {
-      html += `<div class="detail-block-imgs">${images.map(u => `<img src="${u}">`).join('')}</div>`
+      html += `<div class="detail-block-imgs">${images.map(u => `<img src="${u}" onerror="this.style.display='none'">`).join('')}</div>`
     } else if (images.length === 1) {
       html += `<img class="detail-block-img" src="${images[0]}">`
     }
@@ -329,6 +335,7 @@ function render(d) {
   document.getElementById('heroTitle').textContent = d.heroTitle || ''
   document.getElementById('heroText').textContent = d.heroText || ''
   if (d.heroImage) document.getElementById('heroBg').style.backgroundImage = `url(${d.heroImage})`
+  document.getElementById('heroBgMobile').style.backgroundImage = `url(${d.heroImageMobile || d.heroImage || ''})`
   document.getElementById('aboutTitle').textContent = d.aboutTitle || ''
   const aboutFullText = d.aboutText || ''
   const aboutParas = aboutFullText.split('\n').filter(p => p.trim() !== '')
@@ -357,7 +364,7 @@ function render(d) {
   const og = document.getElementById('optionGrid')
   og.innerHTML = (d.options || []).map(o => `
     <div class="option-card">
-      <div class="option-img">${o.image ? `<img src="${o.image}" alt="${o.title || ''}">` : ''}</div>
+      <div class="option-img">${o.image ? `<img src="${o.image}" alt="${o.title || ''}" onerror="this.style.display='none'">` : ''}</div>
       <div class="option-body">
         <h4>${o.title || ''}</h4>
         <span class="option-price">${o.price || ''}</span>
@@ -372,7 +379,7 @@ function render(d) {
     const cover = (s.images && s.images[0]) || s.image || ''
     return `
     <div class="card" data-idx="${i}">
-      <div class="card-img">${cover ? `<img src="${cover}" alt="${s.title}">` : ''}</div>
+      <div class="card-img">${cover ? `<img src="${cover}" alt="${s.title}" onerror="this.style.display='none'">` : ''}</div>
       <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span><br><span class="card-more">詳細・料金を見る</span></div>
     </div>
   `}).join('')
@@ -407,7 +414,7 @@ function render(d) {
       } else if (images.length > 1) {
         img.style.display = 'none'
         gallery.style.display = 'grid'
-        gallery.innerHTML = images.map(url => `<img src="${url}">`).join('')
+        gallery.innerHTML = images.map(url => `<img src="${url}" onerror="this.style.display='none'">`).join('')
       } else if (images.length === 1) {
         gallery.style.display = 'none'
         img.src = images[0]; img.style.display = 'block'
