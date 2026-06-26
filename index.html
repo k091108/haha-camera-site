@@ -302,7 +302,7 @@ function renderSubplans(subplans) {
     let html = '<div class="detail-block">'
     if (sp.title) html += `<span class="detail-heading">${escHtml(sp.title)}</span>`
     if (sp.video) html += `<video class="detail-block-video" src="${sp.video}" controls playsinline></video>`
-    const images = (sp.images && sp.images.length) ? sp.images : (sp.image ? [sp.image] : [])
+    const images = ((sp.images && sp.images.length) ? sp.images : (sp.image ? [sp.image] : [])).filter(Boolean)
     if (images.length > 1) {
       html += `<div class="detail-block-imgs">${images.map(u => `<img src="${u}">`).join('')}</div>`
     } else if (images.length === 1) {
@@ -381,11 +381,13 @@ function render(d) {
   sg.querySelectorAll('.card').forEach(card => {
     card.addEventListener('click', () => {
       const s = services[card.dataset.idx]
-      const images = (s.images && s.images.length) ? s.images : (s.image ? [s.image] : [])
+      const images = ((s.images && s.images.length) ? s.images : (s.image ? [s.image] : [])).filter(Boolean)
       document.getElementById('modalTitle').textContent = s.title || ''
       document.getElementById('modalDesc').textContent = s.desc || ''
       if (s.subplans && s.subplans.length) {
-        document.getElementById('modalDetail').innerHTML = renderSubplans(s.subplans)
+        const introBody = parseBody(s.detail || '')
+        const introHtml = introBody.intro.length ? `<p class="detail-intro" style="margin-bottom:28px;">${introBody.intro.map(escHtml).join('\n')}</p>` : ''
+        document.getElementById('modalDetail').innerHTML = introHtml + renderSubplans(s.subplans)
       } else {
         document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
       }
