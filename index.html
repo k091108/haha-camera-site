@@ -36,9 +36,9 @@
 
   .hero{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden;}
   .hero-bg{position:absolute;inset:0;background:#cbb9a8 center/cover no-repeat;}
-  .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(58,51,44,.18) 0%, rgba(58,51,44,.55) 100%);}
-  .hero-content{position:relative;z-index:2;color:var(--white);padding:0 24px;max-width:760px;margin:0 auto;text-align:center;}
-  .hero h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:700;line-height:1.5;margin-bottom:22px;white-space:pre-line;}
+  .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(58,51,44,.30) 0%, rgba(58,51,44,.62) 100%);}
+  .hero-content{position:relative;z-index:2;color:var(--white);padding:0 24px;max-width:880px;margin:0 auto;text-align:center;}
+  .hero h1{font-size:clamp(1.6rem,3.8vw,2.6rem);font-weight:700;line-height:1.6;margin-bottom:22px;white-space:pre-line;text-shadow:0 2px 18px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.4);}
   .hero p{font-size:1.02rem;opacity:.95;max-width:520px;margin:0 auto 32px;}
   .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
   .btn{display:inline-block;padding:14px 30px;border-radius:30px;font-size:.92rem;font-weight:500;transition:transform .2s ease, background .2s ease;}
@@ -76,6 +76,8 @@
   .modal-box h3{font-size:1.25rem;margin-bottom:6px;}
   .modal-box .modal-desc{color:var(--rose-deep);font-size:.85rem;margin-bottom:18px;}
   .modal-box .modal-img{width:100%;max-height:240px;object-fit:cover;border-radius:8px;margin-bottom:18px;background:#eee;}
+  .modal-box .modal-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+  .modal-box .modal-gallery img{width:100%;height:100px;object-fit:cover;border-radius:6px;background:#eee;}
   .modal-box .modal-detail{color:var(--ink-soft);font-size:.92rem;line-height:1.85;}
   .modal-box .modal-detail:empty::before{content:'詳細情報は準備中です。';color:#a39c92;}
   .detail-block{margin-bottom:26px;}
@@ -93,6 +95,16 @@
 
   .notice{background:var(--cream-deep);}
   .notice-box{background:var(--white);border-radius:10px;padding:32px;white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;}
+
+  .options{background:var(--white);}
+  .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;}
+  .option-card{background:var(--cream);border-radius:10px;overflow:hidden;box-shadow:0 12px 28px -18px rgba(58,51,44,.22);}
+  .option-img{height:160px;background:#e8e0d4;overflow:hidden;}
+  .option-img img{width:100%;height:100%;object-fit:cover;}
+  .option-body{padding:16px 18px 20px;}
+  .option-body h4{font-size:.98rem;font-weight:600;margin-bottom:4px;}
+  .option-price{color:var(--rose-deep);font-weight:700;font-size:.95rem;display:block;margin-bottom:6px;}
+  .option-desc{font-size:.82rem;color:var(--ink-soft);white-space:pre-line;}
 
   .gallery{background:var(--white);}
   .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
@@ -121,7 +133,7 @@
     <nav class="nav-links" id="navLinks">
       <a href="#about">自己紹介</a>
       <a href="#services">撮影プラン</a>
-      <a href="#gallery">ギャラリー</a>
+      <a href="#option">オプション</a>
       <a href="#notice">注意事項</a>
       <a id="navLine" class="nav-cta" href="#" target="_blank" rel="noopener">ご予約はこちら</a>
     </nav>
@@ -133,6 +145,7 @@
   <div class="modal-box">
     <button class="modal-close" id="modalClose" aria-label="閉じる">×</button>
     <img class="modal-img" id="modalImg" style="display:none;">
+    <div class="modal-gallery" id="modalGallery" style="display:none;"></div>
     <h3 id="modalTitle"></h3>
     <span class="modal-desc" id="modalDesc"></span>
     <div class="modal-detail" id="modalDetail"></div>
@@ -173,13 +186,13 @@
   </div>
 </section>
 
-<section class="gallery" id="gallery">
+<section class="options" id="option">
   <div class="wrap">
     <div class="section-head">
-      <span class="section-eyebrow">Gallery</span>
-      <h2>撮影実績</h2>
+      <span class="section-eyebrow">Option</span>
+      <h2>アルバム等オプション商品</h2>
     </div>
-    <div class="gallery-grid" id="galleryGrid"></div>
+    <div class="option-grid" id="optionGrid"></div>
   </div>
 </section>
 
@@ -258,7 +271,7 @@ function parseDetail(text) {
     if (b.links.length) html += b.links.map(l => {
       const urlMatch = l.match(/(https?:\/\/\S+)/)
       if (urlMatch) return `<a class="detail-link" href="${urlMatch[1]}" target="_blank" rel="noopener">${escHtml(l)}</a><br>`
-      return `<span class="detail-note">${escHtml(l)}</span><br>`
+      return `<a class="detail-link" href="#option" onclick="document.getElementById('modalOverlay').classList.remove('open')">${escHtml(l)}</a><br>`
     }).join('')
     html += '</div>'
     return html
@@ -289,33 +302,55 @@ function render(d) {
   document.getElementById('footerInsta').href = d.instagramUrl || '#'
   document.getElementById('noticeText').textContent = d.notice || ''
 
-  const services = d.services || []
-  const sg = document.getElementById('serviceGrid')
-  sg.innerHTML = services.map((s, i) => `
-    <div class="card" data-idx="${i}">
-      <div class="card-img">${s.image ? `<img src="${s.image}" alt="${s.title}">` : ''}</div>
-      <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span><br><span class="card-more">詳細・料金を見る</span></div>
+  const og = document.getElementById('optionGrid')
+  og.innerHTML = (d.options || []).map(o => `
+    <div class="option-card">
+      <div class="option-img">${o.image ? `<img src="${o.image}" alt="${o.title || ''}">` : ''}</div>
+      <div class="option-body">
+        <h4>${o.title || ''}</h4>
+        <span class="option-price">${o.price || ''}</span>
+        <p class="option-desc">${o.desc || ''}</p>
+      </div>
     </div>
   `).join('')
+
+  const services = d.services || []
+  const sg = document.getElementById('serviceGrid')
+  sg.innerHTML = services.map((s, i) => {
+    const cover = (s.images && s.images[0]) || s.image || ''
+    return `
+    <div class="card" data-idx="${i}">
+      <div class="card-img">${cover ? `<img src="${cover}" alt="${s.title}">` : ''}</div>
+      <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span><br><span class="card-more">詳細・料金を見る</span></div>
+    </div>
+  `}).join('')
 
   const overlay = document.getElementById('modalOverlay')
   sg.querySelectorAll('.card').forEach(card => {
     card.addEventListener('click', () => {
       const s = services[card.dataset.idx]
+      const images = (s.images && s.images.length) ? s.images : (s.image ? [s.image] : [])
       document.getElementById('modalTitle').textContent = s.title || ''
       document.getElementById('modalDesc').textContent = s.desc || ''
       document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
       document.getElementById('modalLine').href = d.lineUrl || '#'
       const img = document.getElementById('modalImg')
-      if (s.image) { img.src = s.image; img.style.display = 'block' } else { img.style.display = 'none' }
+      const gallery = document.getElementById('modalGallery')
+      if (images.length > 1) {
+        img.style.display = 'none'
+        gallery.style.display = 'grid'
+        gallery.innerHTML = images.map(url => `<img src="${url}">`).join('')
+      } else if (images.length === 1) {
+        gallery.style.display = 'none'
+        img.src = images[0]; img.style.display = 'block'
+      } else {
+        img.style.display = 'none'; gallery.style.display = 'none'
+      }
       overlay.classList.add('open')
     })
   })
   document.getElementById('modalClose').addEventListener('click', () => overlay.classList.remove('open'))
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open') })
-
-  const gg = document.getElementById('galleryGrid')
-  gg.innerHTML = (d.gallery || []).map(url => `<img src="${url}" alt="">`).join('')
 
   document.getElementById('loading').style.display = 'none'
   document.getElementById('app').style.display = 'block'

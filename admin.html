@@ -76,9 +76,9 @@
   </div>
 
   <div class="card">
-    <h3>ギャラリー</h3>
-    <div id="galleryList"></div>
-    <input type="file" accept="image/*" onchange="addGalleryImage(event)">
+    <h3>アルバム等オプション商品</h3>
+    <div id="optionList"></div>
+    <button class="btn btn-outline" onclick="addOption()">+ 商品を追加</button>
   </div>
 
   <div class="card">
@@ -130,7 +130,7 @@ function fillForm() {
   document.getElementById('instagramUrl').value = data.instagramUrl || ''
   document.getElementById('notice').value = data.notice || ''
   renderServices()
-  renderGallery()
+  renderOptions()
 }
 
 function renderServices() {
@@ -142,57 +142,83 @@ function renderServices() {
       <input type="text" value="${esc(s.title)}" oninput="data.services[${i}].title=this.value">
       <label>説明</label>
       <input type="text" value="${esc(s.desc)}" oninput="data.services[${i}].desc=this.value">
-      <label>写真</label>
-      <input type="file" accept="image/*" onchange="uploadServiceImage(event,${i})">
-      <img class="img-preview" src="${s.image || ''}">
+      <label>写真（複数枚アップロードできます。1枚目がカード一覧の表紙になります）</label>
+      <div id="serviceImages${i}">${renderServiceImages(s, i)}</div>
+      <input type="file" accept="image/*" onchange="addServiceImage(event,${i})">
       <label>詳細・料金（クリックすると出るポップアップに表示されます）</label>
       <textarea style="min-height:140px;" oninput="data.services[${i}].detail=this.value">${esc(s.detail)}</textarea>
     </div>
   `).join('')
 }
 
+function renderServiceImages(s, i) {
+  const images = s.images || (s.image ? [s.image] : [])
+  return images.map((url, j) => `
+    <span class="gallery-item">
+      <img src="${url}">
+      <button onclick="removeServiceImage(${i},${j})">×</button>
+    </span>
+  `).join('')
+}
+
 function addService() {
   data.services = data.services || []
-  data.services.push({ title: '', desc: '', image: '' })
+  data.services.push({ title: '', desc: '', images: [], detail: '' })
   renderServices()
 }
 function removeService(i) {
   data.services.splice(i, 1)
   renderServices()
 }
+function addServiceImage(ev, i) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data.services[i].images = data.services[i].images || (data.services[i].image ? [data.services[i].image] : [])
+    data.services[i].images.push(url)
+    renderServices()
+  })
+}
+function removeServiceImage(i, j) {
+  data.services[i].images.splice(j, 1)
+  renderServices()
+}
 
-function renderGallery() {
-  const list = document.getElementById('galleryList')
-  list.innerHTML = (data.gallery || []).map((url, i) => `
-    <span class="gallery-item">
-      <img src="${url}">
-      <button onclick="removeGalleryImage(${i})">×</button>
-    </span>
+function renderOptions() {
+  const list = document.getElementById('optionList')
+  list.innerHTML = (data.options || []).map((o, i) => `
+    <div class="service-item">
+      <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeOption(${i})">削除</button>
+      <label>商品名</label>
+      <input type="text" value="${esc(o.title)}" oninput="data.options[${i}].title=this.value">
+      <label>料金</label>
+      <input type="text" value="${esc(o.price)}" oninput="data.options[${i}].price=this.value">
+      <label>説明</label>
+      <textarea oninput="data.options[${i}].desc=this.value">${esc(o.desc)}</textarea>
+      <label>写真</label>
+      <input type="file" accept="image/*" onchange="uploadOptionImage(event,${i})">
+      <img class="img-preview" src="${o.image || ''}">
+    </div>
   `).join('')
 }
-function removeGalleryImage(i) {
-  data.gallery.splice(i, 1)
-  renderGallery()
+function addOption() {
+  data.options = data.options || []
+  data.options.push({ title: '', price: '', desc: '', image: '' })
+  renderOptions()
+}
+function removeOption(i) {
+  data.options.splice(i, 1)
+  renderOptions()
+}
+function uploadOptionImage(ev, i) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data.options[i].image = url
+    renderOptions()
+  })
 }
 
 function uploadImage(ev, key) {
   toDataUrl(ev.target.files[0], (url) => {
     data[key] = url
     document.getElementById(key + 'Preview').src = url
-  })
-}
-function uploadServiceImage(ev, i) {
-  toDataUrl(ev.target.files[0], (url) => {
-    data.services[i].image = url
-    renderServices()
-  })
-}
-function addGalleryImage(ev) {
-  toDataUrl(ev.target.files[0], (url) => {
-    data.gallery = data.gallery || []
-    data.gallery.push(url)
-    renderGallery()
-    ev.target.value = ''
   })
 }
 
