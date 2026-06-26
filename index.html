@@ -76,8 +76,19 @@
   .modal-box h3{font-size:1.25rem;margin-bottom:6px;}
   .modal-box .modal-desc{color:var(--rose-deep);font-size:.85rem;margin-bottom:18px;}
   .modal-box .modal-img{width:100%;max-height:240px;object-fit:cover;border-radius:8px;margin-bottom:18px;background:#eee;}
-  .modal-box .modal-detail{white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;}
+  .modal-box .modal-detail{color:var(--ink-soft);font-size:.92rem;line-height:1.85;}
   .modal-box .modal-detail:empty::before{content:'詳細情報は準備中です。';color:#a39c92;}
+  .detail-block{margin-bottom:26px;}
+  .detail-block:last-child{margin-bottom:0;}
+  .detail-heading{display:inline-block;background:var(--cream-deep);color:var(--rose-deep);font-weight:600;font-size:.88rem;padding:5px 14px;border-radius:6px;margin-bottom:10px;}
+  .detail-intro{margin-bottom:14px;white-space:pre-line;}
+  .detail-row{display:flex;gap:14px;padding:10px 0;border-top:1px dashed var(--cream-deep);}
+  .detail-row:first-of-type{border-top:none;}
+  .detail-label{flex:0 0 84px;font-size:.8rem;font-weight:600;color:var(--ink);padding-top:2px;}
+  .detail-value{flex:1;white-space:pre-line;}
+  .detail-row.is-price .detail-value{font-size:1.15rem;font-weight:700;color:var(--rose-deep);}
+  .detail-note{display:block;font-size:.78rem;color:#a39c92;margin-top:4px;}
+  .detail-link{display:inline-block;margin-top:6px;font-size:.8rem;color:var(--rose-deep);text-decoration:underline;word-break:break-all;}
   .modal-box .modal-cta{display:inline-block;margin-top:22px;}
 
   .notice{background:var(--cream-deep);}
@@ -207,6 +218,54 @@
 // 【カスタマイズ】Worker URLをあなたのものに変更してください
 const W = 'https://haha-camera-site.kurage-ni-naritaiii.workers.dev'
 
+function parseDetail(text) {
+  if (!text) return ''
+  const lines = text.split('\n')
+  const blocks = []
+  let block = { heading: null, intro: [], items: [], links: [] }
+  let item = null
+  const pushBlock = () => { if (block.heading || block.intro.length || block.items.length || block.links.length) blocks.push(block) }
+
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (line === '') { item = null; continue }
+    const headingMatch = line.match(/^【(.+)】$/)
+    if (headingMatch) {
+      pushBlock()
+      block = { heading: headingMatch[1], intro: [], items: [], links: [] }
+      item = null
+      continue
+    }
+    if (line.startsWith('▷')) { block.links.push(line.replace(/^▷/, '').trim()); item = null; continue }
+    const labelMatch = line.match(/^[・■□]\s*(.+)$/)
+    if (labelMatch) { item = { label: labelMatch[1], lines: [] }; block.items.push(item); continue }
+    const isNote = line.startsWith('※')
+    if (item) item.lines.push({ note: isNote, text: line })
+    else block.intro.push(line)
+  }
+  pushBlock()
+
+  return blocks.map(b => {
+    let html = '<div class="detail-block">'
+    if (b.heading) html += `<span class="detail-heading">${escHtml(b.heading)}</span>`
+    if (b.intro.length) html += `<p class="detail-intro">${b.intro.map(escHtml).join('\n')}</p>`
+    b.items.forEach(it => {
+      const isPrice = /料金/.test(it.label)
+      const mainLines = it.lines.filter(l => !l.note).map(l => escHtml(l.text))
+      const notes = it.lines.filter(l => l.note).map(l => `<span class="detail-note">${escHtml(l.text)}</span>`).join('')
+      html += `<div class="detail-row${isPrice ? ' is-price' : ''}"><div class="detail-label">${escHtml(it.label)}</div><div class="detail-value">${mainLines.join('<br>')}${notes}</div></div>`
+    })
+    if (b.links.length) html += b.links.map(l => {
+      const urlMatch = l.match(/(https?:\/\/\S+)/)
+      if (urlMatch) return `<a class="detail-link" href="${urlMatch[1]}" target="_blank" rel="noopener">${escHtml(l)}</a><br>`
+      return `<span class="detail-note">${escHtml(l)}</span><br>`
+    }).join('')
+    html += '</div>'
+    return html
+  }).join('')
+}
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
 async function load() {
   try {
     const res = await fetch(`${W}/api/content`)
@@ -245,7 +304,7 @@ function render(d) {
       const s = services[card.dataset.idx]
       document.getElementById('modalTitle').textContent = s.title || ''
       document.getElementById('modalDesc').textContent = s.desc || ''
-      document.getElementById('modalDetail').textContent = s.detail || ''
+      document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
       document.getElementById('modalLine').href = d.lineUrl || '#'
       const img = document.getElementById('modalImg')
       if (s.image) { img.src = s.image; img.style.display = 'block' } else { img.style.display = 'none' }
