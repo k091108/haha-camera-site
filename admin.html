@@ -107,16 +107,76 @@ const W = 'https://haha-camera-site.kurage-ni-naritaiii.workers.dev'
 let password = ''
 let data = null
 
-function login() {
+async function login() {
   password = document.getElementById('passInput').value
-  fetch(`${W}/api/content`).then(r => r.json()).then(d => {
-    data = d
-    document.getElementById('loginScreen').style.display = 'none'
-    document.getElementById('adminScreen').style.display = 'block'
-    fillForm()
-  }).catch(() => {
+  document.getElementById('loginErr').textContent = ''
+  let d
+  try {
+    const res = await fetch(`${W}/api/content`)
+    d = await res.json()
+  } catch (e) {
     document.getElementById('loginErr').textContent = '読み込みに失敗しました'
+    return
+  }
+  data = d
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('adminScreen').style.display = 'block'
+  const status = document.getElementById('status')
+  status.textContent = '古い写真データを確認中…'
+  const migrated = await migrateImages((i, total) => {
+    status.textContent = `古い写真データを整理中… (${i}/${total})`
   })
+  fillForm()
+  if (migrated > 0) {
+    status.textContent = `古い写真データ ${migrated} 件を整理しました。保存しています…`
+    try {
+      const res = await fetch(`${W}/api/content`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify(data),
+      })
+      const r = await res.json()
+      status.textContent = r.ok ? `✅ 古い写真データ ${migrated} 件を整理して保存しました。続けて編集できます。` : '❌ 整理した内容の保存に失敗しました。もう一度「保存して公開する」を押してください。'
+    } catch (e) {
+      status.textContent = '❌ 整理した内容の保存に失敗しました。もう一度「保存して公開する」を押してください。'
+    }
+  } else {
+    status.textContent = ''
+  }
+}
+
+function isDataUrl(s) { return typeof s === 'string' && s.startsWith('data:') }
+
+async function migrateImages(onProgress) {
+  const tasks = []
+  const addTask = (getter, setter) => tasks.push({ getter, setter })
+  if (isDataUrl(data.heroImage)) addTask(() => data.heroImage, v => data.heroImage = v)
+  if (isDataUrl(data.aboutImage)) addTask(() => data.aboutImage, v => data.aboutImage = v)
+  ;(data.services || []).forEach(s => {
+    if (isDataUrl(s.image)) addTask(() => s.image, v => s.image = v)
+    ;(s.images || []).forEach((img, idx) => { if (isDataUrl(img)) addTask(() => s.images[idx], v => s.images[idx] = v) })
+    ;(s.subplans || []).forEach(sp => {
+      if (isDataUrl(sp.image)) addTask(() => sp.image, v => sp.image = v)
+      ;(sp.images || []).forEach((img, idx) => { if (isDataUrl(img)) addTask(() => sp.images[idx], v => sp.images[idx] = v) })
+      if (isDataUrl(sp.video)) addTask(() => sp.video, v => sp.video = v)
+    })
+  })
+  ;(data.options || []).forEach(o => { if (isDataUrl(o.image)) addTask(() => o.image, v => o.image = v) })
+
+  for (let i = 0; i < tasks.length; i++) {
+    if (onProgress) onProgress(i + 1, tasks.length)
+    const t = tasks[i]
+    try {
+      const res = await fetch(`${W}/api/image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ dataUrl: t.getter() }),
+      })
+      const r = await res.json()
+      if (r.ok) t.setter(`${W}${r.url}`)
+    } catch (e) { /* 失敗した分はそのまま残し、次に進む */ }
+  }
+  return tasks.length
 }
 
 function fillForm() {
@@ -163,12 +223,25 @@ function renderSubplans(s, i) {
       <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeSubplan(${i},${j})">削除</button>
       <label>サブプラン名</label>
       <input type="text" value="${esc(sp.title)}" oninput="data.services[${i}].subplans[${j}].title=this.value">
-      <label>写真</label>
-      <input type="file" accept="image/*" onchange="uploadSubplanImage(event,${i},${j})">
-      <img class="img-preview" src="${sp.image || ''}">
+      <label>写真（複数枚アップロードできます）</label>
+      <div id="subplanImages${i}_${j}">${renderSubplanImages(sp, i, j)}</div>
+      <input type="file" accept="image/*" onchange="addSubplanImage(event,${i},${j})">
+      <label>動画（任意。スマホで撮った短い動画などをそのままアップロードできます。20MB以下にしてください）</label>
+      ${sp.video ? `<video src="${sp.video}" controls style="width:200px;border-radius:6px;display:block;margin-top:6px;"></video><button type="button" class="btn-danger" style="margin-top:6px;" onclick="removeSubplanVideo(${i},${j})">動画を削除</button>` : ''}
+      <input type="file" accept="video/*" onchange="uploadSubplanVideo(event,${i},${j})">
       <label>詳細・料金</label>
       <textarea style="min-height:110px;" oninput="data.services[${i}].subplans[${j}].detail=this.value">${esc(sp.detail)}</textarea>
     </div>
+  `).join('')
+}
+
+function renderSubplanImages(sp, i, j) {
+  const images = sp.images || (sp.image ? [sp.image] : [])
+  return images.map((url, k) => `
+    <span class="gallery-item">
+      <img src="${url}">
+      <button onclick="removeSubplanImage(${i},${j},${k})">×</button>
+    </span>
   `).join('')
 }
 
@@ -200,11 +273,33 @@ function removeSubplan(i, j) {
   data.services[i].subplans.splice(j, 1)
   renderServices()
 }
-function uploadSubplanImage(ev, i, j) {
+function addSubplanImage(ev, i, j) {
   uploadFile(ev.target.files[0], (url) => {
-    data.services[i].subplans[j].image = url
+    const sp = data.services[i].subplans[j]
+    sp.images = sp.images || (sp.image ? [sp.image] : [])
+    sp.images.push(url)
     renderServices()
   })
+}
+function removeSubplanImage(i, j, k) {
+  data.services[i].subplans[j].images.splice(k, 1)
+  renderServices()
+}
+function uploadSubplanVideo(ev, i, j) {
+  const file = ev.target.files[0]
+  if (!file) return
+  if (file.size > 20 * 1024 * 1024) {
+    alert('動画のサイズが大きすぎます（20MB以下にしてください）')
+    return
+  }
+  uploadFile(file, (url) => {
+    data.services[i].subplans[j].video = url
+    renderServices()
+  })
+}
+function removeSubplanVideo(i, j) {
+  data.services[i].subplans[j].video = ''
+  renderServices()
 }
 
 function addServiceImage(ev, i) {
