@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>関西出張撮影 | 奈良出張撮影 haha.camera</title>
+<meta name="description" content="関西出張撮影 ニューボーンからウエディングまで、家族に寄り添って撮影いたします。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FAF5EF; --cream-deep:#F1E7DA; --ink:#3A332C; --ink-soft:#6B6058;
+    --rose:#C98F76; --rose-deep:#A86B53; --white:#FFFFFF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Zen Kaku Gothic New', sans-serif;color:var(--ink);background:var(--cream);line-height:1.8;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.brand{font-family:'Shippori Mincho', serif;letter-spacing:.03em;}
+  a{color:inherit;text-decoration:none;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(250,245,239,0.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--cream-deep);}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;max-width:1080px;margin:0 auto;}
+  .brand{font-size:1.15rem;font-weight:600;}
+  .brand span{color:var(--rose-deep);}
+  .nav-links{display:flex;gap:28px;font-size:.92rem;}
+  .nav-cta{background:var(--rose);color:var(--white);padding:9px 20px;border-radius:30px;font-size:.85rem;white-space:nowrap;}
+  .nav-cta:hover{background:var(--rose-deep);}
+  .menu-toggle{display:none;font-size:1.6rem;background:none;border:none;cursor:pointer;color:var(--ink);}
+  @media(max-width:760px){
+    .nav-links{display:none;flex-direction:column;position:absolute;top:64px;left:0;right:0;background:var(--cream);padding:20px 24px;gap:18px;border-bottom:1px solid var(--cream-deep);}
+    .nav-links.open{display:flex;} .menu-toggle{display:block;}
+  }
+
+  .hero{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden;}
+  .hero-bg{position:absolute;inset:0;background:#cbb9a8 center/cover no-repeat;}
+  .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(58,51,44,.18) 0%, rgba(58,51,44,.55) 100%);}
+  .hero-content{position:relative;z-index:2;color:var(--white);padding:0 24px;max-width:760px;margin:0 auto;text-align:center;}
+  .hero h1{font-size:clamp(2rem,5vw,3.4rem);font-weight:700;line-height:1.5;margin-bottom:22px;white-space:pre-line;}
+  .hero p{font-size:1.02rem;opacity:.95;max-width:520px;margin:0 auto 32px;}
+  .hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+  .btn{display:inline-block;padding:14px 30px;border-radius:30px;font-size:.92rem;font-weight:500;transition:transform .2s ease, background .2s ease;}
+  .btn-primary{background:var(--rose);color:var(--white);}
+  .btn-primary:hover{background:var(--rose-deep);transform:translateY(-2px);}
+  .btn-outline{border:1px solid rgba(255,255,255,.7);color:var(--white);}
+
+  section{padding:96px 0;}
+  .section-head{text-align:center;max-width:600px;margin:0 auto 56px;}
+  .section-eyebrow{color:var(--rose-deep);font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;display:block;}
+  .section-head h2{font-size:clamp(1.6rem,3vw,2.1rem);font-weight:600;}
+
+  .about{background:var(--white);}
+  .about-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:56px;align-items:center;}
+  .about-grid img{border-radius:6px;box-shadow:0 20px 50px -20px rgba(58,51,44,.35);background:#eee;min-height:200px;}
+  .about-text h3{font-size:1.5rem;margin-bottom:18px;font-weight:600;}
+  .about-text p{color:var(--ink-soft);margin-bottom:16px;white-space:pre-line;}
+  @media(max-width:760px){.about-grid{grid-template-columns:1fr;gap:32px;}}
+
+  .services{background:var(--cream-deep);}
+  .service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;}
+  .card{background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 14px 34px -18px rgba(58,51,44,.25);transition:transform .25s ease;}
+  .card:hover{transform:translateY(-6px);}
+  .card-img{height:180px;overflow:hidden;background:#e8e0d4;}
+  .card-img img{width:100%;height:100%;object-fit:cover;}
+  .card-body{padding:20px 22px 24px;}
+  .card-body h3{font-size:1.05rem;font-weight:600;margin-bottom:6px;}
+  .card-body span{color:var(--rose-deep);font-size:.85rem;}
+
+  .gallery{background:var(--white);}
+  .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .gallery-grid img{width:100%;height:220px;object-fit:cover;border-radius:6px;background:#eee;}
+  @media(max-width:760px){.gallery-grid{grid-template-columns:repeat(2,1fr);}}
+
+  .cta{background:linear-gradient(135deg, var(--rose-deep), var(--rose));color:var(--white);text-align:center;}
+  .cta h2{font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:16px;font-weight:600;}
+  .cta p{opacity:.95;margin-bottom:32px;}
+
+  footer{background:var(--ink);color:#E8E1D8;padding:48px 0 28px;text-align:center;font-size:.85rem;}
+  footer .brand{color:#E8E1D8;font-size:1.05rem;margin-bottom:14px;display:block;}
+  .footer-links{display:flex;justify-content:center;gap:24px;margin:18px 0;flex-wrap:wrap;font-size:.85rem;}
+  .footer-note{opacity:.6;margin-top:18px;font-size:.78rem;}
+  .loading{padding:160px 0;text-align:center;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading">読み込み中…</div>
+<div id="app" style="display:none;">
+
+<header>
+  <div class="nav">
+    <a href="#top" class="brand">haha<span>.</span>camera</a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#about">自己紹介</a>
+      <a href="#services">撮影プラン</a>
+      <a href="#gallery">ギャラリー</a>
+      <a id="navLine" class="nav-cta" href="#" target="_blank" rel="noopener">ご予約はこちら</a>
+    </nav>
+    <button class="menu-toggle" id="menuToggle" aria-label="メニュー">☰</button>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-content">
+    <h1 id="heroTitle"></h1>
+    <p id="heroText"></p>
+    <div class="hero-actions">
+      <a id="heroLine" class="btn btn-primary" href="#" target="_blank" rel="noopener">ご予約・お問合せ</a>
+      <a class="btn btn-outline" href="#services">撮影プランを見る</a>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="about">
+  <div class="wrap about-grid">
+    <img id="aboutImage" src="" alt="haha.camera">
+    <div class="about-text">
+      <span class="section-eyebrow">About</span>
+      <h3 id="aboutTitle"></h3>
+      <p id="aboutText"></p>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-eyebrow">Plan</span>
+      <h2>撮影プラン</h2>
+    </div>
+    <div class="service-grid" id="serviceGrid"></div>
+  </div>
+</section>
+
+<section class="gallery" id="gallery">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-eyebrow">Gallery</span>
+      <h2>撮影実績</h2>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</section>
+
+<section class="cta" id="contact">
+  <div class="wrap">
+    <h2>気軽にお問合せください。</h2>
+    <p>ご予約・撮影プランのご相談はLINEから承っております。</p>
+    <a id="ctaLine" class="btn btn-outline" href="#" target="_blank" rel="noopener" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.9);">LINEでご予約・お問合せ</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="brand">haha.camera</span>
+    <div class="footer-links">
+      <a id="footerInsta" href="#" target="_blank" rel="noopener">Instagram</a>
+      <a id="footerLine" href="#" target="_blank" rel="noopener">ご予約・お問合せ</a>
+    </div>
+    <p class="footer-note">© 2026 haha.camera — 関西出張撮影 / 奈良出張撮影</p>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// 【カスタマイズ】Worker URLをあなたのものに変更してください
+const W = 'https://haha-camera-site.kurage-ni-naritaiii.workers.dev'
+
+async function load() {
+  try {
+    const res = await fetch(`${W}/api/content`)
+    const d = await res.json()
+    render(d)
+  } catch (e) {
+    document.getElementById('loading').textContent = '読み込みに失敗しました。'
+  }
+}
+
+function render(d) {
+  document.getElementById('heroTitle').textContent = d.heroTitle || ''
+  document.getElementById('heroText').textContent = d.heroText || ''
+  if (d.heroImage) document.getElementById('heroBg').style.backgroundImage = `url(${d.heroImage})`
+  document.getElementById('aboutTitle').textContent = d.aboutTitle || ''
+  document.getElementById('aboutText').textContent = d.aboutText || ''
+  if (d.aboutImage) document.getElementById('aboutImage').src = d.aboutImage
+
+  const line = d.lineUrl || '#'
+  ;['navLine','heroLine','ctaLine','footerLine'].forEach(id => document.getElementById(id).href = line)
+  document.getElementById('footerInsta').href = d.instagramUrl || '#'
+
+  const sg = document.getElementById('serviceGrid')
+  sg.innerHTML = (d.services || []).map(s => `
+    <div class="card">
+      <div class="card-img">${s.image ? `<img src="${s.image}" alt="${s.title}">` : ''}</div>
+      <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span></div>
+    </div>
+  `).join('')
+
+  const gg = document.getElementById('galleryGrid')
+  gg.innerHTML = (d.gallery || []).map(url => `<img src="${url}" alt="">`).join('')
+
+  document.getElementById('loading').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('menuToggle')
+  const links = document.getElementById('navLinks')
+  toggle?.addEventListener('click', () => links.classList.toggle('open'))
+})
+
+load()
+</script>
+</body>
+</html>

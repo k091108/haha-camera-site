@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理画面 | haha.camera</title>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,'Hiragino Sans',sans-serif;background:#FAF5EF;color:#3A332C;margin:0;padding:24px;}
+  .wrap{max-width:720px;margin:0 auto;}
+  h1{font-size:1.3rem;margin-bottom:24px;}
+  .card{background:#fff;border-radius:10px;padding:24px;margin-bottom:20px;box-shadow:0 8px 24px -16px rgba(0,0,0,.2);}
+  label{display:block;font-size:.85rem;color:#6B6058;margin:14px 0 6px;font-weight:600;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=password], textarea{
+    width:100%;padding:10px 12px;border:1px solid #e0d8cc;border-radius:6px;font-size:.95rem;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:70px;}
+  .img-preview{width:120px;height:80px;object-fit:cover;border-radius:6px;background:#eee;margin-top:8px;display:block;}
+  .row{display:flex;gap:10px;align-items:flex-end;}
+  .row > div{flex:1;}
+  .btn{
+    display:inline-block;padding:10px 22px;border-radius:30px;border:none;font-size:.9rem;font-weight:600;cursor:pointer;
+  }
+  .btn-primary{background:#C98F76;color:#fff;}
+  .btn-primary:hover{background:#A86B53;}
+  .btn-outline{background:#fff;border:1px solid #C98F76;color:#A86B53;}
+  .btn-danger{background:#fff;border:1px solid #c66;color:#c66;font-size:.8rem;padding:6px 14px;}
+  .service-item{border:1px solid #eee0d0;border-radius:8px;padding:16px;margin-bottom:14px;position:relative;}
+  .gallery-item{display:inline-block;position:relative;margin:0 8px 8px 0;}
+  .gallery-item img{width:90px;height:90px;object-fit:cover;border-radius:6px;}
+  .gallery-item button{position:absolute;top:-6px;right:-6px;background:#c66;color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;line-height:1;}
+  #status{margin-top:14px;font-size:.85rem;}
+  #loginScreen{max-width:340px;margin:80px auto;text-align:center;}
+  .save-bar{position:sticky;bottom:0;background:#FAF5EF;padding:16px 0;display:flex;justify-content:center;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>管理画面ログイン</h1>
+  <input type="password" id="passInput" placeholder="パスワード">
+  <button class="btn btn-primary" style="margin-top:14px;width:100%;" onclick="login()">ログイン</button>
+  <div id="loginErr" style="color:#c66;margin-top:10px;font-size:.85rem;"></div>
+</div>
+
+<div class="wrap" id="adminScreen" style="display:none;">
+  <h1>ホームページ編集</h1>
+
+  <div class="card">
+    <h3>トップ（ヒーロー）</h3>
+    <label>見出し（改行できます）</label>
+    <textarea id="heroTitle"></textarea>
+    <label>説明文</label>
+    <textarea id="heroText"></textarea>
+    <label>背景画像</label>
+    <input type="file" accept="image/*" onchange="uploadImage(event,'heroImage')">
+    <img class="img-preview" id="heroImagePreview">
+  </div>
+
+  <div class="card">
+    <h3>自己紹介</h3>
+    <label>見出し</label>
+    <input type="text" id="aboutTitle">
+    <label>説明文</label>
+    <textarea id="aboutText"></textarea>
+    <label>写真</label>
+    <input type="file" accept="image/*" onchange="uploadImage(event,'aboutImage')">
+    <img class="img-preview" id="aboutImagePreview">
+  </div>
+
+  <div class="card">
+    <h3>撮影プラン</h3>
+    <div id="serviceList"></div>
+    <button class="btn btn-outline" onclick="addService()">+ プランを追加</button>
+  </div>
+
+  <div class="card">
+    <h3>ギャラリー</h3>
+    <div id="galleryList"></div>
+    <input type="file" accept="image/*" onchange="addGalleryImage(event)">
+  </div>
+
+  <div class="card">
+    <h3>リンク</h3>
+    <label>LINEのURL</label>
+    <input type="text" id="lineUrl">
+    <label>InstagramのURL</label>
+    <input type="text" id="instagramUrl">
+  </div>
+
+  <div class="save-bar">
+    <button class="btn btn-primary" onclick="save()">保存して公開する</button>
+  </div>
+  <div id="status"></div>
+</div>
+
+<script>
+// 【カスタマイズ】Worker URLをあなたのものに変更してください
+const W = 'https://haha-camera-site.kurage-ni-naritaiii.workers.dev'
+let password = ''
+let data = null
+
+function login() {
+  password = document.getElementById('passInput').value
+  fetch(`${W}/api/content`).then(r => r.json()).then(d => {
+    data = d
+    document.getElementById('loginScreen').style.display = 'none'
+    document.getElementById('adminScreen').style.display = 'block'
+    fillForm()
+  }).catch(() => {
+    document.getElementById('loginErr').textContent = '読み込みに失敗しました'
+  })
+}
+
+function fillForm() {
+  document.getElementById('heroTitle').value = data.heroTitle || ''
+  document.getElementById('heroText').value = data.heroText || ''
+  document.getElementById('heroImagePreview').src = data.heroImage || ''
+  document.getElementById('aboutTitle').value = data.aboutTitle || ''
+  document.getElementById('aboutText').value = data.aboutText || ''
+  document.getElementById('aboutImagePreview').src = data.aboutImage || ''
+  document.getElementById('lineUrl').value = data.lineUrl || ''
+  document.getElementById('instagramUrl').value = data.instagramUrl || ''
+  renderServices()
+  renderGallery()
+}
+
+function renderServices() {
+  const list = document.getElementById('serviceList')
+  list.innerHTML = (data.services || []).map((s, i) => `
+    <div class="service-item">
+      <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeService(${i})">削除</button>
+      <label>プラン名</label>
+      <input type="text" value="${esc(s.title)}" oninput="data.services[${i}].title=this.value">
+      <label>説明</label>
+      <input type="text" value="${esc(s.desc)}" oninput="data.services[${i}].desc=this.value">
+      <label>写真</label>
+      <input type="file" accept="image/*" onchange="uploadServiceImage(event,${i})">
+      <img class="img-preview" src="${s.image || ''}">
+    </div>
+  `).join('')
+}
+
+function addService() {
+  data.services = data.services || []
+  data.services.push({ title: '', desc: '', image: '' })
+  renderServices()
+}
+function removeService(i) {
+  data.services.splice(i, 1)
+  renderServices()
+}
+
+function renderGallery() {
+  const list = document.getElementById('galleryList')
+  list.innerHTML = (data.gallery || []).map((url, i) => `
+    <span class="gallery-item">
+      <img src="${url}">
+      <button onclick="removeGalleryImage(${i})">×</button>
+    </span>
+  `).join('')
+}
+function removeGalleryImage(i) {
+  data.gallery.splice(i, 1)
+  renderGallery()
+}
+
+function uploadImage(ev, key) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data[key] = url
+    document.getElementById(key + 'Preview').src = url
+  })
+}
+function uploadServiceImage(ev, i) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data.services[i].image = url
+    renderServices()
+  })
+}
+function addGalleryImage(ev) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data.gallery = data.gallery || []
+    data.gallery.push(url)
+    renderGallery()
+    ev.target.value = ''
+  })
+}
+
+function toDataUrl(file, cb) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => cb(reader.result)
+  reader.readAsDataURL(file)
+}
+
+function esc(s) { return (s || '').replace(/"/g, '&quot;') }
+
+async function save() {
+  data.heroTitle = document.getElementById('heroTitle').value
+  data.heroText = document.getElementById('heroText').value
+  data.aboutTitle = document.getElementById('aboutTitle').value
+  data.aboutText = document.getElementById('aboutText').value
+  data.lineUrl = document.getElementById('lineUrl').value
+  data.instagramUrl = document.getElementById('instagramUrl').value
+
+  const status = document.getElementById('status')
+  status.textContent = '保存中…'
+  try {
+    const res = await fetch(`${W}/api/content`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+      body: JSON.stringify(data),
+    })
+    const d = await res.json()
+    status.textContent = d.ok ? '✅ 保存しました。サイトに反映されています。' : ('❌ ' + (d.error || '保存に失敗しました'))
+  } catch (e) {
+    status.textContent = '❌ 保存に失敗しました'
+  }
+}
+</script>
+</body>
+</html>
