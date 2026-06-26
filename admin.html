@@ -95,6 +95,13 @@
   </div>
 
   <div class="card">
+    <h3>注意事項（クリックで開く項目）</h3>
+    <p style="font-size:.85rem;color:#6B6058;margin-bottom:10px;">「出張撮影に関する注意事項」のように、クリックすると開く項目を追加できます。本文は1行ずつ箇条書きとして表示されます（改行で項目が分かれます）。</p>
+    <div id="noticeCategoryList"></div>
+    <button class="btn btn-outline" onclick="addNoticeCategory()">+ 項目を追加</button>
+  </div>
+
+  <div class="card">
     <h3>リンク</h3>
     <label>LINEのURL</label>
     <input type="text" id="lineUrl">
@@ -198,6 +205,7 @@ function fillForm() {
   document.getElementById('lineUrl').value = data.lineUrl || ''
   document.getElementById('instagramUrl').value = data.instagramUrl || ''
   document.getElementById('notice').value = data.notice || ''
+  renderNoticeCategories()
   renderServices()
   renderOptions()
 }
@@ -207,6 +215,10 @@ function renderServices() {
   list.innerHTML = (data.services || []).map((s, i) => `
     <div class="service-item">
       <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeService(${i})">削除</button>
+      <div style="position:absolute;top:10px;right:80px;display:flex;gap:4px;">
+        <button type="button" class="btn btn-outline" style="padding:4px 10px;font-size:.9rem;" onclick="moveService(${i},-1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" class="btn btn-outline" style="padding:4px 10px;font-size:.9rem;" onclick="moveService(${i},1)" ${i === (data.services.length - 1) ? 'disabled' : ''}>↓</button>
+      </div>
       <label>プラン名</label>
       <input type="text" value="${esc(s.title)}" oninput="data.services[${i}].title=this.value">
       <label>説明</label>
@@ -312,7 +324,7 @@ const SERVICE_PRESETS = [
   {
     title: '写真教室',
     desc: '',
-    detail: '楽しく我が子を撮りたい方向けの一眼レフ撮影講座です。\n\n【セレクトレッスン】90分 20,000円\n　初心者向けコース：マニュアル操作、ピント合わせ、鮮やかに見せる設定（カメラ設定完全マスターブック付き）\n　中級者コース：構図、光の向き、撮影時のコミュニケーション（資料付き）\n　プロ向けコース：屋外実践 or zoomでの写真アドバイス・集客相談\n　レタッチコース：Lightroom／Photoshopレタッチ\n　オプション：1名様追加+5,000円、プロの方+5,000円、休日+5,000円、出張費別途\n\n【初心者から中級者へまるッとお得な講座】3回マンツーマン 50,000円\n　①マニュアル設定 ②ロケーション講座初級編 ③ライトルーム講座（資料付き、動画保存OK）\n\n【カメラでお仕事をしてみたい方への講座】10回マンツーマン 200,000円\n　①マニュアル設定 ②③ロケーション講座 ④⑤ライトルーム・フォトショップ講座 ⑥ロケーション実践編\n　⑦写真講評アドバイス ⑧モデルさん撮影 ⑨撮影同行アシスタント ⑩ご自身での撮影アドバイス\n\n▷プリセット販売（3,000円）\nスマホ版：https://hahacamera.base.shop/items/82034971\nPC版：https://hahacamera.base.shop/items/82497825',
+    detail: '楽しく我が子を撮りたい方向けの一眼レフ撮影講座です。\n\n【セレクトレッスン（90分）】\n・料金\n　20,000円\n・コースの種類\n　初心者向け：マニュアル操作、ピント合わせ、鮮やかに見せる設定（カメラ設定完全マスターブック付き）\n　中級者向け：構図、光の向き、撮影時のコミュニケーション（資料付き）\n　プロ向け：屋外実践 または zoomでの写真アドバイス・集客相談\n　レタッチ：Lightroom／Photoshopでのレタッチ\n・オプション\n　1名様追加 +5,000円／プロの方 +5,000円／休日 +5,000円\n　※出張費は別途かかります\n\n【初心者から中級者へまるッとお得な講座（3回マンツーマン）】\n・料金\n　50,000円\n・内容\n　①マニュアル設定 ②ロケーション講座初級編 ③ライトルーム講座（資料付き、動画保存OK）\n\n【カメラでお仕事をしてみたい方への講座（10回マンツーマン）】\n・料金\n　200,000円\n・内容\n　①マニュアル設定／②③ロケーション講座／④⑤ライトルーム・フォトショップ講座／⑥ロケーション実践編／⑦写真講評アドバイス／⑧モデルさん撮影／⑨撮影同行アシスタント／⑩ご自身での撮影アドバイス\n\n【プリセット販売】\n・料金\n　3,000円\n・内容\n　自分でも編集を楽しみたい方向けに、いつも使用している色味の設定（Lightroom用）を販売しています。\n・購入はこちら\n　スマホ版：https://hahacamera.base.shop/items/82034971\n　PC版：https://hahacamera.base.shop/items/82497825',
   },
 ]
 
@@ -335,6 +347,15 @@ function addMissingPresets() {
   status.textContent = addedCount > 0
     ? `${addedCount}件のプランを追加しました。下にスクロールして写真を追加し、「保存して公開する」を押してください。`
     : '追加できるプランはすべて入力済みでした。'
+}
+
+function moveService(i, dir) {
+  const j = i + dir
+  if (j < 0 || j >= data.services.length) return
+  const tmp = data.services[i]
+  data.services[i] = data.services[j]
+  data.services[j] = tmp
+  renderServices()
 }
 
 function addService() {
@@ -411,6 +432,28 @@ function addServiceImage(ev, i) {
 function removeServiceImage(i, j) {
   data.services[i].images.splice(j, 1)
   renderServices()
+}
+
+function renderNoticeCategories() {
+  const list = document.getElementById('noticeCategoryList')
+  list.innerHTML = (data.noticeCategories || []).map((c, i) => `
+    <div class="service-item">
+      <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeNoticeCategory(${i})">削除</button>
+      <label>項目名（クリックすると開く部分のタイトル）</label>
+      <input type="text" value="${esc(c.title)}" oninput="data.noticeCategories[${i}].title=this.value">
+      <label>本文（1行ずつ箇条書きになります）</label>
+      <textarea style="min-height:160px;" oninput="data.noticeCategories[${i}].body=this.value">${esc(c.body)}</textarea>
+    </div>
+  `).join('')
+}
+function addNoticeCategory() {
+  data.noticeCategories = data.noticeCategories || []
+  data.noticeCategories.push({ title: '', body: '' })
+  renderNoticeCategories()
+}
+function removeNoticeCategory(i) {
+  data.noticeCategories.splice(i, 1)
+  renderNoticeCategories()
 }
 
 function renderOptions() {
