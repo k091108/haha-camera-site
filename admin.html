@@ -206,6 +206,10 @@ function renderServices() {
       <div id="serviceImages${i}">${renderServiceImages(s, i)}</div>
       <input type="file" accept="image/*" onchange="addServiceImage(event,${i})">
 
+      <label>動画（任意。サブプランを使わない場合はこちらに直接アップロードできます。20MB以下にしてください）</label>
+      ${s.video ? `<video src="${s.video}" controls style="width:200px;border-radius:6px;display:block;margin-top:6px;"></video><button type="button" class="btn-danger" style="margin-top:6px;" onclick="removeServiceVideo(${i})">動画を削除</button>` : ''}
+      <input type="file" accept="video/*" onchange="uploadServiceVideo(event,${i})">
+
       <label style="margin-top:20px;">サブプラン（プラン内に複数の料金プランがある場合に使います。例：「日常ニューボーンフォト」「おくるみかごプラン」など。それぞれに写真をつけられます）</label>
       <div id="subplanList${i}">${renderSubplans(s, i)}</div>
       <button type="button" class="btn btn-outline" style="margin-top:6px;" onclick="addSubplan(${i})">+ サブプランを追加</button>
@@ -299,6 +303,23 @@ function uploadSubplanVideo(ev, i, j) {
 }
 function removeSubplanVideo(i, j) {
   data.services[i].subplans[j].video = ''
+  renderServices()
+}
+
+function uploadServiceVideo(ev, i) {
+  const file = ev.target.files[0]
+  if (!file) return
+  if (file.size > 20 * 1024 * 1024) {
+    alert('動画のサイズが大きすぎます（20MB以下にしてください）')
+    return
+  }
+  uploadFile(file, (url) => {
+    data.services[i].video = url
+    renderServices()
+  })
+}
+function removeServiceVideo(i) {
+  data.services[i].video = ''
   renderServices()
 }
 

@@ -152,6 +152,7 @@
   <div class="modal-box">
     <button class="modal-close" id="modalClose" aria-label="閉じる">×</button>
     <img class="modal-img" id="modalImg" style="display:none;">
+    <video class="detail-block-video" id="modalVideo" style="display:none;" controls playsinline></video>
     <div class="modal-gallery" id="modalGallery" style="display:none;"></div>
     <h3 id="modalTitle"></h3>
     <span class="modal-desc" id="modalDesc"></span>
@@ -391,6 +392,14 @@ function render(d) {
       document.getElementById('modalLine').href = d.lineUrl || '#'
       const img = document.getElementById('modalImg')
       const gallery = document.getElementById('modalGallery')
+      const video = document.getElementById('modalVideo')
+      if (s.subplans && s.subplans.length) {
+        video.style.display = 'none'
+      } else if (s.video) {
+        video.src = s.video; video.style.display = 'block'
+      } else {
+        video.style.display = 'none'
+      }
       if (s.subplans && s.subplans.length) {
         img.style.display = 'none'; gallery.style.display = 'none'
       } else if (images.length > 1) {
@@ -406,8 +415,12 @@ function render(d) {
       overlay.classList.add('open')
     })
   })
-  document.getElementById('modalClose').addEventListener('click', () => overlay.classList.remove('open'))
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open') })
+  const closeModal = () => {
+    overlay.classList.remove('open')
+    document.getElementById('modalVideo').pause()
+  }
+  document.getElementById('modalClose').addEventListener('click', closeModal)
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal() })
 
   document.getElementById('loading').style.display = 'none'
   document.getElementById('app').style.display = 'block'
