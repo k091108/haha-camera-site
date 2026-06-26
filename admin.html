@@ -51,6 +51,8 @@
     <h3>トップ（ヒーロー）</h3>
     <label>見出し（改行できます）</label>
     <textarea id="heroTitle"></textarea>
+    <label>見出し（スマホ表示用・任意。スマホで見た時はこちらの改行が使われます。空の場合は上と同じ文章が使われます）</label>
+    <textarea id="heroTitleMobile"></textarea>
     <label>説明文</label>
     <textarea id="heroText"></textarea>
     <label>背景画像</label>
@@ -76,6 +78,8 @@
     <h3>撮影プラン</h3>
     <div id="serviceList"></div>
     <button class="btn btn-outline" onclick="addService()">+ プランを追加</button>
+    <button class="btn btn-primary" onclick="addMissingPresets()">まだ入っていないプランをまとめて追加する</button>
+    <div id="presetStatus" style="font-size:.85rem;color:var(--ink-soft);margin-top:8px;"></div>
   </div>
 
   <div class="card">
@@ -184,6 +188,7 @@ async function migrateImages(onProgress) {
 
 function fillForm() {
   document.getElementById('heroTitle').value = data.heroTitle || ''
+  document.getElementById('heroTitleMobile').value = data.heroTitleMobile || ''
   document.getElementById('heroText').value = data.heroText || ''
   document.getElementById('heroImagePreview').src = data.heroImage || ''
   document.getElementById('heroImageMobilePreview').src = data.heroImageMobile || ''
@@ -261,6 +266,75 @@ function renderServiceImages(s, i) {
       <button onclick="removeServiceImage(${i},${j})">×</button>
     </span>
   `).join('')
+}
+
+// 「まだ入っていないプランをまとめて追加する」用のプリセット内容
+const SERVICE_PRESETS = [
+  {
+    title: '出張撮影ノーマル',
+    desc: '日常・記念日の写真',
+    detail: '家族の成長や思い出をあたたかく、優しい色で残します。\n誕生日、家族の節目、何でもない日にご利用ください。\n\n下記の3つのプランからお選びいただけます。',
+    subplans: [
+      {
+        title: 'フォトプラン',
+        detail: '・料金\n　24,000円（税込）＋出張費\n　（SNSやHPへのお顔出し掲載にご協力いただけるご家族様は1,000円引き）\n　※土日祝日・お盆・年末年始 +5,000円\n　※桜週間 +3,000円\n　※撮影場所や時間の追加：1箇所30分 +5,000円〜（ご希望に応じてお見積り）\n・撮影時間\n　約1時間\n・場所\n　お好きな場所1箇所（公園、お店、レンタルスタジオなど）\n　※撮影場所によっては事前の許可申請が必要な場合があります。各施設・自治体への確認はお客様ご自身でお願いしております。\n　※馬見丘陵公園・奈良公園・若草山はカメラマン申請許可が必要なため、申請手数料1,500円が必要です。\n・納品内容\n　60枚保証、撮影から1ヶ月程度でデータ納品\n・その他\n　雨天・体調不良の場合は別日への変更が可能です。当日の急な変更・キャンセルの場合はキャンセル料金が必要です。\n　当日までのみ使えるオプション商品2,000円offクーポン付き（パネル小のみ1,500円off）',
+      },
+      {
+        title: 'ムービープラン',
+        detail: '・料金\n　26,000円（税込）＋出張費（条件はフォトプランと同様）\n・撮影時間\n　約1時間\n・納品内容\n　2分程度の動画データ保証、撮影から1ヶ月程度で納品',
+      },
+      {
+        title: 'フォト&ムービープラン',
+        detail: '・料金\n　40,000円（税込）＋出張費（条件はフォトプランと同様）\n・撮影時間\n　約1時間30分\n・納品内容\n　30枚保証＋1分30秒程度の動画データ保証、撮影から1ヶ月程度で納品\n\n▷アルバム等オプション商品はLINEよりお問合せください',
+      },
+    ],
+  },
+  {
+    title: 'お宮参り・七五三撮影',
+    desc: '家族の節目を記録',
+    detail: '・料金\n　30,000円（税込）＋出張費\n・撮影時間・納品枚数\n　お問合せください\n\n詳しくはLINEにてご相談ください\n\n▷アルバム等オプション商品はLINEよりお問合せください',
+  },
+  {
+    title: '成人式・卒業式撮影',
+    desc: '晴れの日の前撮りも',
+    detail: '出張撮影スペシャル（成人式・卒業式）\n記念となる節目の時をあたたかく、優しい色で残します。特別な記念にご利用ください。\n\n・料金\n　28,000円（税込）＋出張費\n　※土日祝日 +5,000円／お盆休み +5,000円／年末年始 +5,000円／桜週間 +3,000円\n　※兄弟家族写真追加 +5,000円\n　※撮影場所や時間の追加：1箇所30分 +5,000円〜（ご希望に応じてお見積り）\n・撮影時間\n　1時間〜1時間30分程度\n・場所\n　お好きな場所1箇所（公園、お店、レンタルスタジオなど）\n　※撮影場所によっては事前の許可申請が必要な場合があります。各施設・自治体への確認はお客様ご自身でお願いしております。\n　※馬見丘陵公園・奈良公園・若草山はカメラマン申請許可が必要なため、申請手数料1,500円が必要です。\n・納品内容\n　全データ（目つむり・ブレなどの失敗写真、連写を除く）、60枚保証、撮影から1ヶ月程度で納品\n・その他\n　雨天・体調不良の場合は別日への変更が可能です。当日の急な変更・キャンセルの場合はキャンセル料金が必要です。\n　当日までのみ使えるオプション商品2,000円offクーポン付き（パネル小のみ1,500円off）\n\n▷アルバム等オプション商品はLINEよりお問合せください',
+  },
+  {
+    title: 'ウエディング前撮り',
+    desc: 'お二人らしい一枚を',
+    detail: '出張撮影スペシャル（ウエディング前撮り・後撮り）\n記念となる節目の時をあたたかく、優しい色で残します。特別な記念にご利用ください。\n\n・料金\n　28,000円（税込）＋出張費\n　※土日祝日 +5,000円／お盆休み +5,000円／年末年始 +5,000円／桜週間 +3,000円\n　※動画オプション（90秒程度納品）+10,000円〜（SNS掲載不可の方は+15,000円）\n　※女性ドレスレンタル・ヘアメイク撮影同行付き +16,000円〜\n　※撮影場所や時間の追加：1箇所30分 +5,000円〜（ご希望に応じてお見積り）\n・撮影時間\n　1時間〜1時間30分程度\n・場所\n　お好きな場所1箇所（公園、海、お店、レンタルスタジオなど。追加も可能、ご相談ください）\n　※撮影場所によっては事前の許可申請が必要な場合があります。各施設・自治体への確認はお客様ご自身でお願いしております。\n　※馬見丘陵公園・奈良公園・若草山はカメラマン申請許可が必要なため、申請手数料1,500円が必要です。\n・納品内容\n　全データ（目つむり・ブレなどの失敗写真、連写を除く）、60枚保証、撮影から1ヶ月程度で納品\n・その他\n　新婦様のレンタルドレス、ヘアメイクさん同行付きプランもございます。ご相談ください。\n　雨天・体調不良の場合は別日への変更が可能です。当日の急な変更・キャンセルの場合はキャンセル料金が必要です。\n　当日までのみ使えるオプション商品2,000円offクーポン付き（パネル小のみ1,500円off）\n\n▷アルバム等オプション商品はLINEよりお問合せください',
+  },
+  {
+    title: '奈良市スタジオ',
+    desc: 'お家スタジオでも対応',
+    detail: 'マタニティフォトやハーフバースデー、お誕生日記念、七五三の前撮り後撮り、特別な記念日にお写真を残しませんか。\n\n・料金\n　平日 20,000円（税込）／休日 25,000円（税込）\n・オプション\n　主役の追加 +3,000円／ショートムービー1分 +7,000円／全データ +5,000円／スマッシュケーキ +3,000円／着物レンタル +4,000円\n・ヘアメイク着付け\n　女の子着付け 4,500円（作り帯でないもの5,000円）／男の子袴着付け 4,500円／男女被布着付け 3,500円／女の子ヘアメイク 4,000円（ヘアのみ3,500円）／男の子ヘアセット 1,500円\n・撮影時間\n　60分程度（お子様の体調・機嫌により時間が短縮する場合があります）\n・場所\n　ライオンズプラザ富雄2階（奈良県奈良市富雄元町2-6-48）\n・納品内容\n　撮影データ60枚程度オンライン納品、撮影から1ヶ月程度で納品\n・その他\n　体調不良の場合は別日への変更が可能です。当日の急な変更・キャンセルの場合はキャンセル料金が必要です。\n　当日までのみ使えるオプション商品2,000円offクーポン付き（パネル小のみ1,500円off）\n\n▷アルバム等オプション商品はLINEよりお問合せください',
+  },
+  {
+    title: '写真教室',
+    desc: '',
+    detail: '楽しく我が子を撮りたい方向けの一眼レフ撮影講座です。\n\n【セレクトレッスン】90分 20,000円\n　初心者向けコース：マニュアル操作、ピント合わせ、鮮やかに見せる設定（カメラ設定完全マスターブック付き）\n　中級者コース：構図、光の向き、撮影時のコミュニケーション（資料付き）\n　プロ向けコース：屋外実践 or zoomでの写真アドバイス・集客相談\n　レタッチコース：Lightroom／Photoshopレタッチ\n　オプション：1名様追加+5,000円、プロの方+5,000円、休日+5,000円、出張費別途\n\n【初心者から中級者へまるッとお得な講座】3回マンツーマン 50,000円\n　①マニュアル設定 ②ロケーション講座初級編 ③ライトルーム講座（資料付き、動画保存OK）\n\n【カメラでお仕事をしてみたい方への講座】10回マンツーマン 200,000円\n　①マニュアル設定 ②③ロケーション講座 ④⑤ライトルーム・フォトショップ講座 ⑥ロケーション実践編\n　⑦写真講評アドバイス ⑧モデルさん撮影 ⑨撮影同行アシスタント ⑩ご自身での撮影アドバイス\n\n▷プリセット販売（3,000円）\nスマホ版：https://hahacamera.base.shop/items/82034971\nPC版：https://hahacamera.base.shop/items/82497825',
+  },
+]
+
+function addMissingPresets() {
+  data.services = data.services || []
+  const existingTitles = data.services.map(s => s.title)
+  let addedCount = 0
+  SERVICE_PRESETS.forEach(preset => {
+    if (!existingTitles.includes(preset.title)) {
+      const newService = { title: preset.title, desc: preset.desc || '', images: [], detail: preset.detail || '' }
+      if (preset.subplans) {
+        newService.subplans = preset.subplans.map(sp => ({ title: sp.title, images: [], detail: sp.detail }))
+      }
+      data.services.push(newService)
+      addedCount++
+    }
+  })
+  renderServices()
+  const status = document.getElementById('presetStatus')
+  status.textContent = addedCount > 0
+    ? `${addedCount}件のプランを追加しました。下にスクロールして写真を追加し、「保存して公開する」を押してください。`
+    : '追加できるプランはすべて入力済みでした。'
 }
 
 function addService() {
@@ -413,6 +487,7 @@ function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').
 
 async function save() {
   data.heroTitle = document.getElementById('heroTitle').value
+  data.heroTitleMobile = document.getElementById('heroTitleMobile').value
   data.heroText = document.getElementById('heroText').value
   data.aboutTitle = document.getElementById('aboutTitle').value
   data.aboutText = document.getElementById('aboutText').value
