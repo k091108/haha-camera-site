@@ -201,14 +201,14 @@ function removeSubplan(i, j) {
   renderServices()
 }
 function uploadSubplanImage(ev, i, j) {
-  toDataUrl(ev.target.files[0], (url) => {
+  uploadFile(ev.target.files[0], (url) => {
     data.services[i].subplans[j].image = url
     renderServices()
   })
 }
 
 function addServiceImage(ev, i) {
-  toDataUrl(ev.target.files[0], (url) => {
+  uploadFile(ev.target.files[0], (url) => {
     data.services[i].images = data.services[i].images || (data.services[i].image ? [data.services[i].image] : [])
     data.services[i].images.push(url)
     renderServices()
@@ -246,14 +246,14 @@ function removeOption(i) {
   renderOptions()
 }
 function uploadOptionImage(ev, i) {
-  toDataUrl(ev.target.files[0], (url) => {
+  uploadFile(ev.target.files[0], (url) => {
     data.options[i].image = url
     renderOptions()
   })
 }
 
 function uploadImage(ev, key) {
-  toDataUrl(ev.target.files[0], (url) => {
+  uploadFile(ev.target.files[0], (url) => {
     data[key] = url
     document.getElementById(key + 'Preview').src = url
   })
@@ -264,6 +264,29 @@ function toDataUrl(file, cb) {
   const reader = new FileReader()
   reader.onload = () => cb(reader.result)
   reader.readAsDataURL(file)
+}
+
+// 写真はサーバー（Worker）に1枚ずつ送って、専用のURLをもらう方式に変更
+// （これにより本文データが巨大にならず、保存エラーを防げます）
+function uploadFile(file, cb) {
+  if (!file) return
+  toDataUrl(file, async (dataUrl) => {
+    try {
+      const res = await fetch(`${W}/api/image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Password': password },
+        body: JSON.stringify({ dataUrl }),
+      })
+      const d = await res.json()
+      if (d.ok) {
+        cb(`${W}${d.url}`)
+      } else {
+        alert('画像のアップロードに失敗しました：' + (d.error || ''))
+      }
+    } catch (e) {
+      alert('画像のアップロードに失敗しました（通信エラー）')
+    }
+  })
 }
 
 function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
