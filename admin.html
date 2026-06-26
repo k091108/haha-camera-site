@@ -145,8 +145,29 @@ function renderServices() {
       <label>写真（複数枚アップロードできます。1枚目がカード一覧の表紙になります）</label>
       <div id="serviceImages${i}">${renderServiceImages(s, i)}</div>
       <input type="file" accept="image/*" onchange="addServiceImage(event,${i})">
-      <label>詳細・料金（クリックすると出るポップアップに表示されます）</label>
+
+      <label style="margin-top:20px;">サブプラン（プラン内に複数の料金プランがある場合に使います。例：「日常ニューボーンフォト」「おくるみかごプラン」など。それぞれに写真をつけられます）</label>
+      <div id="subplanList${i}">${renderSubplans(s, i)}</div>
+      <button type="button" class="btn btn-outline" style="margin-top:6px;" onclick="addSubplan(${i})">+ サブプランを追加</button>
+
+      <label style="margin-top:20px;">詳細・料金（サブプランを使わない場合はこちらに直接書いてください）</label>
       <textarea style="min-height:140px;" oninput="data.services[${i}].detail=this.value">${esc(s.detail)}</textarea>
+    </div>
+  `).join('')
+}
+
+function renderSubplans(s, i) {
+  const subplans = s.subplans || []
+  return subplans.map((sp, j) => `
+    <div class="service-item" style="background:#fdfaf6;">
+      <button class="btn-danger" style="position:absolute;top:10px;right:10px;" onclick="removeSubplan(${i},${j})">削除</button>
+      <label>サブプラン名</label>
+      <input type="text" value="${esc(sp.title)}" oninput="data.services[${i}].subplans[${j}].title=this.value">
+      <label>写真</label>
+      <input type="file" accept="image/*" onchange="uploadSubplanImage(event,${i},${j})">
+      <img class="img-preview" src="${sp.image || ''}">
+      <label>詳細・料金</label>
+      <textarea style="min-height:110px;" oninput="data.services[${i}].subplans[${j}].detail=this.value">${esc(sp.detail)}</textarea>
     </div>
   `).join('')
 }
@@ -170,6 +191,22 @@ function removeService(i) {
   data.services.splice(i, 1)
   renderServices()
 }
+function addSubplan(i) {
+  data.services[i].subplans = data.services[i].subplans || []
+  data.services[i].subplans.push({ title: '', image: '', detail: '' })
+  renderServices()
+}
+function removeSubplan(i, j) {
+  data.services[i].subplans.splice(j, 1)
+  renderServices()
+}
+function uploadSubplanImage(ev, i, j) {
+  toDataUrl(ev.target.files[0], (url) => {
+    data.services[i].subplans[j].image = url
+    renderServices()
+  })
+}
+
 function addServiceImage(ev, i) {
   toDataUrl(ev.target.files[0], (url) => {
     data.services[i].images = data.services[i].images || (data.services[i].image ? [data.services[i].image] : [])

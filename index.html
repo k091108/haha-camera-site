@@ -56,6 +56,9 @@
   .about-grid img{border-radius:6px;box-shadow:0 20px 50px -20px rgba(58,51,44,.35);background:#eee;min-height:200px;}
   .about-text h3{font-size:1.5rem;margin-bottom:18px;font-weight:600;}
   .about-text p{color:var(--ink-soft);margin-bottom:16px;white-space:pre-line;}
+  .about-text .about-full{display:none;}
+  .about-text .about-full.open{display:block;}
+  .about-more{background:none;border:none;color:var(--rose-deep);text-decoration:underline;font-size:.88rem;cursor:pointer;padding:0;font-family:inherit;}
   @media(max-width:760px){.about-grid{grid-template-columns:1fr;gap:32px;}}
 
   .services{background:var(--cream-deep);}
@@ -82,6 +85,7 @@
   .modal-box .modal-detail:empty::before{content:'詳細情報は準備中です。';color:#a39c92;}
   .detail-block{margin-bottom:26px;}
   .detail-block:last-child{margin-bottom:0;}
+  .detail-block-img{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:12px;background:#eee;}
   .detail-heading{display:inline-block;background:var(--cream-deep);color:var(--rose-deep);font-weight:600;font-size:.88rem;padding:5px 14px;border-radius:6px;margin-bottom:10px;}
   .detail-intro{margin-bottom:14px;white-space:pre-line;}
   .detail-row{display:flex;gap:14px;padding:10px 0;border-top:1px dashed var(--cream-deep);}
@@ -171,7 +175,9 @@
     <div class="about-text">
       <span class="section-eyebrow">About</span>
       <h3 id="aboutTitle"></h3>
-      <p id="aboutText"></p>
+      <p id="aboutTextShort"></p>
+      <p id="aboutTextFull" class="about-full"></p>
+      <button class="about-more" id="aboutMoreBtn">続きを読む ＋</button>
     </div>
   </div>
 </section>
@@ -231,48 +237,68 @@
 // 【カスタマイズ】Worker URLをあなたのものに変更してください
 const W = 'https://haha-camera-site.kurage-ni-naritaiii.workers.dev'
 
+function parseBody(text) {
+  const lines = (text || '').split('\n')
+  const result = { intro: [], items: [], links: [] }
+  let item = null
+  for (const raw of lines) {
+    const line = raw.trim()
+    if (line === '') { item = null; continue }
+    if (line.startsWith('▷')) { result.links.push(line.replace(/^▷/, '').trim()); item = null; continue }
+    const labelMatch = line.match(/^[・■□]\s*(.+)$/)
+    if (labelMatch) { item = { label: labelMatch[1], lines: [] }; result.items.push(item); continue }
+    const isNote = line.startsWith('※')
+    if (item) item.lines.push({ note: isNote, text: line })
+    else result.intro.push(line)
+  }
+  return result
+}
+
+function renderBody(b) {
+  let html = ''
+  if (b.intro.length) html += `<p class="detail-intro">${b.intro.map(escHtml).join('\n')}</p>`
+  b.items.forEach(it => {
+    const isPrice = /料金/.test(it.label)
+    const mainLines = it.lines.filter(l => !l.note).map(l => escHtml(l.text))
+    const notes = it.lines.filter(l => l.note).map(l => `<span class="detail-note">${escHtml(l.text)}</span>`).join('')
+    html += `<div class="detail-row${isPrice ? ' is-price' : ''}"><div class="detail-label">${escHtml(it.label)}</div><div class="detail-value">${mainLines.join('<br>')}${notes}</div></div>`
+  })
+  if (b.links.length) html += b.links.map(l => {
+    const urlMatch = l.match(/(https?:\/\/\S+)/)
+    if (urlMatch) return `<a class="detail-link" href="${urlMatch[1]}" target="_blank" rel="noopener">${escHtml(l)}</a><br>`
+    return `<a class="detail-link" href="#option" onclick="document.getElementById('modalOverlay').classList.remove('open')">${escHtml(l)}</a><br>`
+  }).join('')
+  return html
+}
+
 function parseDetail(text) {
   if (!text) return ''
   const lines = text.split('\n')
   const blocks = []
-  let block = { heading: null, intro: [], items: [], links: [] }
-  let item = null
-  const pushBlock = () => { if (block.heading || block.intro.length || block.items.length || block.links.length) blocks.push(block) }
-
+  let heading = null
+  let bodyLines = []
+  const flush = () => { if (heading || bodyLines.some(l => l.trim() !== '')) blocks.push({ heading, body: bodyLines.join('\n') }) }
   for (const raw of lines) {
-    const line = raw.trim()
-    if (line === '') { item = null; continue }
-    const headingMatch = line.match(/^【(.+)】$/)
-    if (headingMatch) {
-      pushBlock()
-      block = { heading: headingMatch[1], intro: [], items: [], links: [] }
-      item = null
-      continue
-    }
-    if (line.startsWith('▷')) { block.links.push(line.replace(/^▷/, '').trim()); item = null; continue }
-    const labelMatch = line.match(/^[・■□]\s*(.+)$/)
-    if (labelMatch) { item = { label: labelMatch[1], lines: [] }; block.items.push(item); continue }
-    const isNote = line.startsWith('※')
-    if (item) item.lines.push({ note: isNote, text: line })
-    else block.intro.push(line)
+    const headingMatch = raw.trim().match(/^【(.+)】$/)
+    if (headingMatch) { flush(); heading = headingMatch[1]; bodyLines = []; continue }
+    bodyLines.push(raw)
   }
-  pushBlock()
-
-  return blocks.map(b => {
+  flush()
+  return blocks.map(blk => {
     let html = '<div class="detail-block">'
-    if (b.heading) html += `<span class="detail-heading">${escHtml(b.heading)}</span>`
-    if (b.intro.length) html += `<p class="detail-intro">${b.intro.map(escHtml).join('\n')}</p>`
-    b.items.forEach(it => {
-      const isPrice = /料金/.test(it.label)
-      const mainLines = it.lines.filter(l => !l.note).map(l => escHtml(l.text))
-      const notes = it.lines.filter(l => l.note).map(l => `<span class="detail-note">${escHtml(l.text)}</span>`).join('')
-      html += `<div class="detail-row${isPrice ? ' is-price' : ''}"><div class="detail-label">${escHtml(it.label)}</div><div class="detail-value">${mainLines.join('<br>')}${notes}</div></div>`
-    })
-    if (b.links.length) html += b.links.map(l => {
-      const urlMatch = l.match(/(https?:\/\/\S+)/)
-      if (urlMatch) return `<a class="detail-link" href="${urlMatch[1]}" target="_blank" rel="noopener">${escHtml(l)}</a><br>`
-      return `<a class="detail-link" href="#option" onclick="document.getElementById('modalOverlay').classList.remove('open')">${escHtml(l)}</a><br>`
-    }).join('')
+    if (blk.heading) html += `<span class="detail-heading">${escHtml(blk.heading)}</span>`
+    html += renderBody(parseBody(blk.body))
+    html += '</div>'
+    return html
+  }).join('')
+}
+
+function renderSubplans(subplans) {
+  return subplans.map(sp => {
+    let html = '<div class="detail-block">'
+    if (sp.image) html += `<img class="detail-block-img" src="${sp.image}">`
+    if (sp.title) html += `<span class="detail-heading">${escHtml(sp.title)}</span>`
+    html += renderBody(parseBody(sp.detail || ''))
     html += '</div>'
     return html
   }).join('')
@@ -294,7 +320,23 @@ function render(d) {
   document.getElementById('heroText').textContent = d.heroText || ''
   if (d.heroImage) document.getElementById('heroBg').style.backgroundImage = `url(${d.heroImage})`
   document.getElementById('aboutTitle').textContent = d.aboutTitle || ''
-  document.getElementById('aboutText').textContent = d.aboutText || ''
+  const aboutFullText = d.aboutText || ''
+  const aboutParas = aboutFullText.split('\n').filter(p => p.trim() !== '')
+  const shortText = aboutParas.slice(0, 2).join('\n')
+  const restText = aboutParas.slice(2).join('\n')
+  document.getElementById('aboutTextShort').textContent = shortText
+  document.getElementById('aboutTextFull').textContent = restText
+  const moreBtn = document.getElementById('aboutMoreBtn')
+  if (restText) {
+    moreBtn.style.display = 'inline-block'
+    moreBtn.onclick = () => {
+      const full = document.getElementById('aboutTextFull')
+      const open = full.classList.toggle('open')
+      moreBtn.textContent = open ? '閉じる －' : '続きを読む ＋'
+    }
+  } else {
+    moreBtn.style.display = 'none'
+  }
   if (d.aboutImage) document.getElementById('aboutImage').src = d.aboutImage
 
   const line = d.lineUrl || '#'
@@ -332,11 +374,17 @@ function render(d) {
       const images = (s.images && s.images.length) ? s.images : (s.image ? [s.image] : [])
       document.getElementById('modalTitle').textContent = s.title || ''
       document.getElementById('modalDesc').textContent = s.desc || ''
-      document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
+      if (s.subplans && s.subplans.length) {
+        document.getElementById('modalDetail').innerHTML = renderSubplans(s.subplans)
+      } else {
+        document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
+      }
       document.getElementById('modalLine').href = d.lineUrl || '#'
       const img = document.getElementById('modalImg')
       const gallery = document.getElementById('modalGallery')
-      if (images.length > 1) {
+      if (s.subplans && s.subplans.length) {
+        img.style.display = 'none'; gallery.style.display = 'none'
+      } else if (images.length > 1) {
         img.style.display = 'none'
         gallery.style.display = 'grid'
         gallery.innerHTML = images.map(url => `<img src="${url}">`).join('')
