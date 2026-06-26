@@ -60,13 +60,28 @@
 
   .services{background:var(--cream-deep);}
   .service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;}
-  .card{background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 14px 34px -18px rgba(58,51,44,.25);transition:transform .25s ease;}
+  .card{background:var(--white);border-radius:10px;overflow:hidden;box-shadow:0 14px 34px -18px rgba(58,51,44,.25);transition:transform .25s ease;cursor:pointer;}
   .card:hover{transform:translateY(-6px);}
   .card-img{height:180px;overflow:hidden;background:#e8e0d4;}
   .card-img img{width:100%;height:100%;object-fit:cover;}
   .card-body{padding:20px 22px 24px;}
   .card-body h3{font-size:1.05rem;font-weight:600;margin-bottom:6px;}
   .card-body span{color:var(--rose-deep);font-size:.85rem;}
+  .card-more{display:inline-block;margin-top:10px;font-size:.78rem;color:var(--rose-deep);text-decoration:underline;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(58,51,44,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:24px;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--white);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;position:relative;padding:36px 28px 32px;}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--ink-soft);}
+  .modal-box h3{font-size:1.25rem;margin-bottom:6px;}
+  .modal-box .modal-desc{color:var(--rose-deep);font-size:.85rem;margin-bottom:18px;}
+  .modal-box .modal-img{width:100%;max-height:240px;object-fit:cover;border-radius:8px;margin-bottom:18px;background:#eee;}
+  .modal-box .modal-detail{white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;}
+  .modal-box .modal-detail:empty::before{content:'詳細情報は準備中です。';color:#a39c92;}
+  .modal-box .modal-cta{display:inline-block;margin-top:22px;}
+
+  .notice{background:var(--cream-deep);}
+  .notice-box{background:var(--white);border-radius:10px;padding:32px;white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;}
 
   .gallery{background:var(--white);}
   .gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
@@ -96,11 +111,23 @@
       <a href="#about">自己紹介</a>
       <a href="#services">撮影プラン</a>
       <a href="#gallery">ギャラリー</a>
+      <a href="#notice">注意事項</a>
       <a id="navLine" class="nav-cta" href="#" target="_blank" rel="noopener">ご予約はこちら</a>
     </nav>
     <button class="menu-toggle" id="menuToggle" aria-label="メニュー">☰</button>
   </div>
 </header>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" id="modalClose" aria-label="閉じる">×</button>
+    <img class="modal-img" id="modalImg" style="display:none;">
+    <h3 id="modalTitle"></h3>
+    <span class="modal-desc" id="modalDesc"></span>
+    <div class="modal-detail" id="modalDetail"></div>
+    <a class="btn btn-primary modal-cta" id="modalLine" href="#" target="_blank" rel="noopener">ご予約・お問合せ</a>
+  </div>
+</div>
 
 <section class="hero" id="top">
   <div class="hero-bg" id="heroBg"></div>
@@ -142,6 +169,16 @@
       <h2>撮影実績</h2>
     </div>
     <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</section>
+
+<section class="notice" id="notice">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="section-eyebrow">Notice</span>
+      <h2>注意事項・キャンセルポリシー</h2>
+    </div>
+    <div class="notice-box" id="noticeText"></div>
   </div>
 </section>
 
@@ -191,14 +228,32 @@ function render(d) {
   const line = d.lineUrl || '#'
   ;['navLine','heroLine','ctaLine','footerLine'].forEach(id => document.getElementById(id).href = line)
   document.getElementById('footerInsta').href = d.instagramUrl || '#'
+  document.getElementById('noticeText').textContent = d.notice || ''
 
+  const services = d.services || []
   const sg = document.getElementById('serviceGrid')
-  sg.innerHTML = (d.services || []).map(s => `
-    <div class="card">
+  sg.innerHTML = services.map((s, i) => `
+    <div class="card" data-idx="${i}">
       <div class="card-img">${s.image ? `<img src="${s.image}" alt="${s.title}">` : ''}</div>
-      <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span></div>
+      <div class="card-body"><h3>${s.title || ''}</h3><span>${s.desc || ''}</span><br><span class="card-more">詳細・料金を見る</span></div>
     </div>
   `).join('')
+
+  const overlay = document.getElementById('modalOverlay')
+  sg.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => {
+      const s = services[card.dataset.idx]
+      document.getElementById('modalTitle').textContent = s.title || ''
+      document.getElementById('modalDesc').textContent = s.desc || ''
+      document.getElementById('modalDetail').textContent = s.detail || ''
+      document.getElementById('modalLine').href = d.lineUrl || '#'
+      const img = document.getElementById('modalImg')
+      if (s.image) { img.src = s.image; img.style.display = 'block' } else { img.style.display = 'none' }
+      overlay.classList.add('open')
+    })
+  })
+  document.getElementById('modalClose').addEventListener('click', () => overlay.classList.remove('open'))
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open') })
 
   const gg = document.getElementById('galleryGrid')
   gg.innerHTML = (d.gallery || []).map(url => `<img src="${url}" alt="">`).join('')

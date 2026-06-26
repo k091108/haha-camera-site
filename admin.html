@@ -82,6 +82,12 @@
   </div>
 
   <div class="card">
+    <h3>注意事項・キャンセルポリシー</h3>
+    <label>本文（トップページの「注意事項」セクションに表示されます）</label>
+    <textarea id="notice" style="min-height:160px;"></textarea>
+  </div>
+
+  <div class="card">
     <h3>リンク</h3>
     <label>LINEのURL</label>
     <input type="text" id="lineUrl">
@@ -122,6 +128,7 @@ function fillForm() {
   document.getElementById('aboutImagePreview').src = data.aboutImage || ''
   document.getElementById('lineUrl').value = data.lineUrl || ''
   document.getElementById('instagramUrl').value = data.instagramUrl || ''
+  document.getElementById('notice').value = data.notice || ''
   renderServices()
   renderGallery()
 }
@@ -138,6 +145,8 @@ function renderServices() {
       <label>写真</label>
       <input type="file" accept="image/*" onchange="uploadServiceImage(event,${i})">
       <img class="img-preview" src="${s.image || ''}">
+      <label>詳細・料金（クリックすると出るポップアップに表示されます）</label>
+      <textarea style="min-height:140px;" oninput="data.services[${i}].detail=this.value">${esc(s.detail)}</textarea>
     </div>
   `).join('')
 }
@@ -194,7 +203,7 @@ function toDataUrl(file, cb) {
   reader.readAsDataURL(file)
 }
 
-function esc(s) { return (s || '').replace(/"/g, '&quot;') }
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
 
 async function save() {
   data.heroTitle = document.getElementById('heroTitle').value
@@ -203,6 +212,7 @@ async function save() {
   data.aboutText = document.getElementById('aboutText').value
   data.lineUrl = document.getElementById('lineUrl').value
   data.instagramUrl = document.getElementById('instagramUrl').value
+  data.notice = document.getElementById('notice').value
 
   const status = document.getElementById('status')
   status.textContent = '保存中…'
