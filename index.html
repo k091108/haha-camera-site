@@ -98,6 +98,9 @@
   .detail-block-img{width:100%;max-height:320px;object-fit:contain;border-radius:8px;margin-bottom:12px;background:var(--cream-deep);}
   .detail-block-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;}
   .detail-block-imgs img{width:100%;height:auto;max-height:300px;object-fit:contain;border-radius:8px;background:var(--cream-deep);}
+  @media(max-width:600px){
+    .detail-block-imgs{grid-template-columns:1fr;}
+  }
   .detail-block-video{width:100%;max-height:380px;border-radius:8px;margin-bottom:12px;background:#000;display:block;}
   .detail-heading{display:inline-block;background:var(--cream-deep);color:var(--rose-deep);font-weight:600;font-size:.88rem;padding:5px 14px;border-radius:6px;margin-bottom:10px;}
   .detail-intro{margin-bottom:14px;white-space:pre-line;}
@@ -111,7 +114,17 @@
   .modal-box .modal-cta{display:inline-block;margin-top:22px;}
 
   .notice{background:var(--cream-deep);}
-  .notice-box{background:var(--white);border-radius:10px;padding:32px;white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;}
+  .notice-box{background:var(--white);border-radius:10px;padding:32px;white-space:pre-line;color:var(--ink-soft);font-size:.92rem;line-height:1.9;margin-bottom:24px;}
+  .notice-acc{background:var(--white);border-radius:10px;overflow:hidden;}
+  .notice-acc-item{border-bottom:1px solid var(--cream-deep);}
+  .notice-acc-item:last-child{border-bottom:none;}
+  .notice-acc-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:none;padding:20px 24px;font-size:.98rem;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;font-family:inherit;}
+  .notice-acc-toggle .plus{color:var(--rose-deep);font-size:1.2rem;transition:transform .25s ease;}
+  .notice-acc-item.open .notice-acc-toggle .plus{transform:rotate(45deg);}
+  .notice-acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 24px;}
+  .notice-acc-item.open .notice-acc-body{padding-bottom:20px;}
+  .notice-acc-body ul{margin:0;padding-left:1.2em;color:var(--ink-soft);font-size:.88rem;line-height:1.85;}
+  .notice-acc-body li{margin-bottom:12px;}
 
   .options{background:var(--white);}
   .option-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:22px;}
@@ -225,6 +238,7 @@
       <h2>注意事項・キャンセルポリシー</h2>
     </div>
     <div class="notice-box" id="noticeText"></div>
+    <div class="notice-acc" id="noticeAcc"></div>
   </div>
 </section>
 
@@ -309,6 +323,24 @@ function parseDetail(text) {
   }).join('')
 }
 
+function splitTopDetail(text) {
+  const lines = (text || '').split('\n')
+  const intro = []
+  const blocks = []
+  let heading = null
+  let body = []
+  let sawHeading = false
+  const flush = () => { if (heading) blocks.push({ heading, body: body.join('\n') }) }
+  for (const raw of lines) {
+    const m = raw.trim().match(/^【(.+)】$/)
+    if (m) { flush(); sawHeading = true; heading = m[1]; body = []; continue }
+    if (!sawHeading) intro.push(raw)
+    else body.push(raw)
+  }
+  flush()
+  return { intro: intro.join('\n'), blocks }
+}
+
 function renderSubplans(subplans) {
   return subplans.map(sp => {
     let html = '<div class="detail-block">'
@@ -326,6 +358,19 @@ function renderSubplans(subplans) {
   }).join('')
 }
 function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function toggleNotice(i) {
+  const item = document.getElementById('noticeItem' + i)
+  const body = item.querySelector('.notice-acc-body')
+  const isOpen = item.classList.contains('open')
+  if (isOpen) {
+    item.classList.remove('open')
+    body.style.maxHeight = '0px'
+  } else {
+    item.classList.add('open')
+    body.style.maxHeight = body.scrollHeight + 'px'
+  }
+}
 
 async function load() {
   try {
@@ -368,6 +413,21 @@ function render(d) {
   document.getElementById('footerInsta').href = d.instagramUrl || '#'
   document.getElementById('noticeText').textContent = d.notice || ''
 
+  const noticeAcc = document.getElementById('noticeAcc')
+  noticeAcc.innerHTML = (d.noticeCategories || []).map((c, i) => {
+    const lines = (c.body || '').split('\n').filter(l => l.trim() !== '')
+    return `
+    <div class="notice-acc-item" id="noticeItem${i}">
+      <button class="notice-acc-toggle" onclick="toggleNotice(${i})">
+        <span>${escHtml(c.title || '')}</span>
+        <span class="plus">＋</span>
+      </button>
+      <div class="notice-acc-body">
+        <ul>${lines.map(l => `<li>${escHtml(l)}</li>`).join('')}</ul>
+      </div>
+    </div>
+  `}).join('')
+
   const og = document.getElementById('optionGrid')
   og.innerHTML = (d.options || []).map(o => `
     <div class="option-card">
@@ -399,9 +459,10 @@ function render(d) {
       document.getElementById('modalTitle').textContent = s.title || ''
       document.getElementById('modalDesc').textContent = s.desc || ''
       if (s.subplans && s.subplans.length) {
-        const introBody = parseBody(s.detail || '')
-        const introHtml = introBody.intro.length ? `<p class="detail-intro" style="margin-bottom:28px;">${introBody.intro.map(escHtml).join('\n')}</p>` : ''
-        document.getElementById('modalDetail').innerHTML = introHtml + renderSubplans(s.subplans)
+        const top = splitTopDetail(s.detail || '')
+        const introHtml = top.intro.trim() ? `<p class="detail-intro" style="margin-bottom:28px;">${escHtml(top.intro.trim())}</p>` : ''
+        const afterHtml = top.blocks.map(b => `<div class="detail-block"><span class="detail-heading">${escHtml(b.heading)}</span>${renderBody(parseBody(b.body))}</div>`).join('')
+        document.getElementById('modalDetail').innerHTML = introHtml + renderSubplans(s.subplans) + afterHtml
       } else {
         document.getElementById('modalDetail').innerHTML = parseDetail(s.detail || '')
       }
